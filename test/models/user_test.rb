@@ -5,7 +5,8 @@ class UserTest < ActiveSupport::TestCase
   #   assert true
   # end
   def setup
-    @user = User.new(name:"ExampleUser", email:"user@user.com")
+    @user = User.new(name:"ExampleUser", email:"user@user.com", 
+              password: "1234", password_digest: "1234")
   end
   
   test "should be valid" do 
@@ -44,6 +45,13 @@ class UserTest < ActiveSupport::TestCase
     duplicate_user.email = @user.email.upcase
     @user.save
     assert_not duplicate_user.valid?
+  end
+  
+  test "email address should be saved as lower-case" do 
+    mixed_case_email = "Foo@ExamplE.CoM"
+    @user.email = mixed_case_email
+    @user.save
+    assert_equal mixed_case_email.downcase, @user.reload.email
   end
   
 end
