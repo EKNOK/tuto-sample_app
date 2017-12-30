@@ -39,3 +39,11 @@ $ rails server
 
 詳しくは、[*Ruby on Rails チュートリアル*](https://railstutorial.jp/)
 を参考にしてください。
+
+
+9章 高度なログインの仕方
+SSL(secure sockets layer)
+記憶トークンのハッシュの値を保存
+remember_digest属性をaddしランダムな文字列を記憶トークンとして使う
+  ->>　（例） SecureRandomモジュールにあるurlsafe_base64メソッド
+attr_accessor 
