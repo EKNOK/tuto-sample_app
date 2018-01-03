@@ -1,4 +1,4 @@
-@import "bootstrap-sprockets"; 
+@import "bootstrap-sprockets";
 @import "bootstrap";
 
 // mixins, variables, etc.
@@ -42,7 +42,7 @@ textarea {
 
 h1, h2, h3, h4, h5, h6 {
   line-height: 1;
-} 
+}
 
 h1 {
   font-size: 3em;
@@ -159,7 +159,7 @@ input, textarea, select, .uneditable-input {
   border: 1px solid #bbb;
   width: 100%;
   margin-bottom: 15px;
-  @include box_sizing; 
+  @include box_sizing;
 }
 
 input {
@@ -181,4 +181,18 @@ input {
   .form-control {
     color: $state-danger-text;
   }
+}
+
+.checkbox {
+  margin-top: -10px;
+  margin-bottom: 10px;
+  span {
+    margin-left: 20px;
+    font-weight: normal;
+  }
+}
+
+#session_remember_me {
+  width: auto;
+  margin-left: 0;
 }

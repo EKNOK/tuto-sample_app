@@ -5,24 +5,24 @@ class UserTest < ActiveSupport::TestCase
   #   assert true
   # end
   def setup
-    @user = User.new(name:"ExampleUser", email:"user@user.com", 
+    @user = User.new(name:"ExampleUser", email:"user@user.com",
               password: "1234", password_digest: "1234")
   end
-  
-  test "should be valid" do 
+
+  test "should be valid" do
     assert @user.valid?
   end
-  
-  test "name should be present" do 
+
+  test "name should be present" do
     @user.name = " "
     assert_not @user.valid?
   end
-  
-  test "email should be present" do 
+
+  test "email should be present" do
     @user.email = " "
     assert_not @user.valid?
   end
-  
+
   test "email validation should accept valid addresses" do
     valid_addresses = %w[user@user.com User01@user01.com USER02@user02.com]
     valid_addresses.each do |valid_address|
@@ -30,7 +30,7 @@ class UserTest < ActiveSupport::TestCase
       assert @user.valid?, "#{valid_address} should be valid"
     end
   end
-  
+
   test "email validation should reject invalid addresses" do
     invalid_addresses = %w[user@example,com user_at_foo.org user.name@example.
                            foo@bar_baz.com foo@bar+baz.com]
@@ -39,19 +39,23 @@ class UserTest < ActiveSupport::TestCase
       assert_not @user.valid?, "#{invalid_address.inspect} should be invalid"
     end
   end
-  
-  test "email addresses should be unique" do 
+
+  test "email addresses should be unique" do
     duplicate_user = @user.dup
     duplicate_user.email = @user.email.upcase
     @user.save
     assert_not duplicate_user.valid?
   end
-  
-  test "email address should be saved as lower-case" do 
+
+  test "email address should be saved as lower-case" do
     mixed_case_email = "Foo@ExamplE.CoM"
     @user.email = mixed_case_email
     @user.save
     assert_equal mixed_case_email.downcase, @user.reload.email
   end
-  
+
+  test "authenticated? should return false for a user with nil digest" do
+    assert_not @user.authenticated?('')
+  end
+
 end
