@@ -41,9 +41,23 @@ $ rails server
 を参考にしてください。
 
 
-9章 高度なログインの仕方
+# 9章 高度なログインの仕方
 SSL(secure sockets layer)
 記憶トークンのハッシュの値を保存
 remember_digest属性をaddしランダムな文字列を記憶トークンとして使う
   ->>　（例） SecureRandomモジュールにあるurlsafe_base64メソッド
-attr_accessor 
+attr_accessor
+
+
+# 10章
+## 10.30 フレンドリーフォワーディング
+保護されたページにログインしていないユーザーがアクセスした際、ログインしたあとのリダイレクト先は、ユーザーが開こうとしていたページにしてあげるのが優しい..
+ユーザーが希望のページに転送するには、リクエスト時点のページをどこかに保存しておく必要がある
+```
+store_location, redirect_back_or
+```　
+メソッドを使い作る
+なお、これらのメソッドはSessionsヘルパーで定義する。
+(app/helpers/sessions_helper.rb)
+
+リスト10.31~~~
