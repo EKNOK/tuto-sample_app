@@ -56,6 +56,7 @@ attr_accessor
 ```
 store_location, redirect_back_or
 ```　
+
 メソッドを使い作る
 なお、これらのメソッドはSessionsヘルパーで定義する。
 (app/helpers/sessions_helper.rb)

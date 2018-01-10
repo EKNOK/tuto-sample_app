@@ -47,8 +47,7 @@ module SessionsHelper
     @current_user = nil
   end
 
-# QUESTION: 記憶したURL (もしくはデフォルト値) にリダイレクト
-
+# 記憶したURL (もしくはデフォルト値) にリダイレクト
   def redirect_back_or(default)
     redirect_to(session[:forwarding_url] || default)
     session.delete(:fowarding_url)
