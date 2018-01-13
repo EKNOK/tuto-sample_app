@@ -84,7 +84,6 @@ def create_activation_digest
   self.activation_token  = User.new_token
   self.activation_digest = User.digest(activation_token)
 end
-
 ```
 
 リスト9.3のrememberメソッドと比べる
@@ -95,7 +94,6 @@ def remember
   self.remember_token = User.new_token
   update_attribute(:remember_digest, User.digest(remember_token))
 end
-
 ```
 
 ここでの本質的な構造は同じなのでrememberメソッドを使い回す
@@ -103,5 +101,5 @@ end
 (記憶トークンやダイジェストはすでにデータベースにいるユーザーのために作成されるのに対し、before_create コールバックの方はユーザーが作成される前に呼び出される。このコールバックがあることによって User.new で新しいユーザーが定義されると activation_token属性やactivation_digest属性が得られるようになる)
 後者の activation_digest属性はすでにデータベースのカラムとの関連付けが出来上がっているので、ユーザーが保存されるときに一緒に保存される
 
-# 11.2 アカウント有効化のメール送信
+## 11.2 アカウント有効化のメール送信
 データのモデル化が終わったので、次にアカウント有効化メールの送信に必要なコードを追加する。
