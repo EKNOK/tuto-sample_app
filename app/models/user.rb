@@ -39,10 +39,13 @@ class User < ApplicationRecord
   end
 
   private
+
+    # メールアヂレスを全て小文字にする
     def downcase_email
       self.email = email.downcase
     end
 
+    # 有効化トークンとダイジェストを作成及び代入する
     def create_activation_digest
       self.activation_token = User.new_token
       self.activation_digest = User.digest(activation_token)
