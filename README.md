@@ -61,4 +61,52 @@ store_location, redirect_back_or
 なお、これらのメソッドはSessionsヘルパーで定義する。
 (app/helpers/sessions_helper.rb)
 
-リスト10.31~~~
+# 11章
+新規登録したユーザーが本当にそのメールアドレスの持ち主なのかどうか確認
+(1) 有効化トークンやダイジェストを関連付けた状態で
+(2) 有効化トークンを含めたリンクをユーザーにメールで送信し、
+(3) ユーザーがそのリンクをクリックすると有効化できるようにする
+また、12章でもパスワードを再設定できる仕組みを実装する
+
+段取り/手順
+
+1. ユーザーの初期状態は「有効化されていない」(unactivated)にしておく
+2. ユーザー登録が行われた際、有効かトークンと、それに対する有効化ダイジェストを作成する。
+3. 有効化ダイジェストはデータベースを保存しておき、有効化トークンはメールアドレスと一緒に、ユーザーに送信する有効化用メールのリンクに仕込んでおく。
+4. ユーザーがメールのリンクをクリックしたら、アプリケーションはメールアドレスをキーにしてユーザーを探し、データベース内に保存しておいた有効化ダイジェストと比較することでトークンを認証する。
+5. ユーザーを認証できたら、ユーザーのステータスを「有効化されていない」から「有効化済み」(activated)に変更する。
+## アカウントの有効化
+AccountActivationsコントローラを作成。
+account_activaationsのeditアクションのルーティングを用意。
+usersモデルに、 activation_digest, activated, activated_at のカラムを追加
+ユーザーが新しい登録を完了するためには必ずアカウントの有効化は必要になるから、
+有効化トークンや有効化ダイジェストはユーザーオブジェクトが作成される前に作成しておく必要がある
+model/user.rbに create_activation_digestメソッドをprivate内に作成
+
+```
+def create_activation_digest
+  self.activation_token  = User.new_token
+  self.activation_digest = User.digest(activation_token)
+end
+
+```
+
+リスト9.3のrememberメソッドと比べる
+
+```
+# 永続セッションのためにユーザーをデータベースに記憶する
+def remember
+  self.remember_token = User.new_token
+  update_attribute(:remember_digest, User.digest(remember_token))
+end
+
+```
+
+ここでの本質的な構造は同じなのでrememberメソッドを使い回す
+二つの主な違いは、後者の update_attribute の使い方で
+(記憶トークンやダイジェストはすでにデータベースにいるユーザーのために作成されるのに対し、before_create コールバックの方はユーザーが作成される前に呼び出される。このコールバックがあることによって User.new で新しいユーザーが定義されると activation_token属性やactivation_digest属性が得られるようになる)
+後者の activation_digest属性はすでにデータベースのカラムとの関連付けが出来上がっているので、ユーザーが保存されるときに一緒に保存される
+
+# 11.2 アカウント有効化のメール送信
+データのモデル化が終わったので、次にアカウント有効化メールの送信に必要なコードを追加する。
+この

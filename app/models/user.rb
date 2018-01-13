@@ -40,7 +40,7 @@ class User < ApplicationRecord
 
   private
 
-    # メールアヂレスを全て小文字にする
+    # メールアドレスを全て小文字にする
     def downcase_email
       self.email = email.downcase
     end
