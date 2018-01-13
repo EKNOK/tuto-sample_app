@@ -53,12 +53,7 @@ attr_accessor
 ## 10.30 フレンドリーフォワーディング
 保護されたページにログインしていないユーザーがアクセスした際、ログインしたあとのリダイレクト先は、ユーザーが開こうとしていたページにしてあげるのが優しい..
 ユーザーが希望のページに転送するには、リクエスト時点のページをどこかに保存しておく必要がある
-
-```
-store_location, redirect_back_or
-```　
-
-メソッドを使い作る
+store_location, redirect_back_orメソッドを使い作る
 なお、これらのメソッドはSessionsヘルパーで定義する。
 (app/helpers/sessions_helper.rb)
 
