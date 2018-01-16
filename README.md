@@ -98,7 +98,8 @@ end
 
 ここでの本質的な構造は同じなのでrememberメソッドを使い回す  
 二つの主な違いは、後者の update_attribute の使い方で  
-(記憶トークンやダイジェストはすでにデータベースにいるユーザーのために作成されるのに対し、before_create コールバックの方はユーザーが作成される前に呼び出される。  このコールバックがあることによって User.new で新しいユーザーが定義されると activation_token属性やactivation_digest属性が得られるようになる)
+(記憶トークンやダイジェストはすでにデータベースにいるユーザーのために作成されるのに対し、before_create コールバックの方はユーザーが作成される前に呼び出される。  
+このコールバックがあることによって User.new で新しいユーザーが定義されると activation_token属性やactivation_digest属性が得られるようになる)
 後者の activation_digest属性はすでにデータベースのカラムとの関連付けが出来上がっているので、ユーザーが保存されるときに一緒に保存される
 
 ## 11.2 アカウント有効化のメール送信
@@ -108,6 +109,37 @@ end
 
 *メイラーの作成*  (viewに作成される)
 
+```$ rails g mailer UserMailer account_activation password_reset
+
 ```
-$ rails g mailer UserMailer account_activaation password_reset
+
+今回必要となる`acount_activation`メソッドと12章で必要となる`password_reset`メソッドを自動生成  
+生成したメイラーごとに、ビューのテンプレートが2つずつ生成
+* テキスト用のテンプレート(`app/views/user_mailer/account_activation.text.erb`)
+* HTMLメール用のテンプレート(`app/views/user_mailer/account_activation.html.erb`)
+HTML用のメールを拒否している又対応していない場合があるため  
+  `app/mailers/application_mailer.rb` 生成されたApplicationメイラー
+  `app/mailers/user_mailer.rb` 生成されたUserメイラー
+Applicationメイラーでデフォルトとなるform(差出人)、layoutを設定  
+Userメイラーでインスタンス変数や宛先 mail to: _FULLIN_ を設定
+
+## 11.2.2 送信メールのプレビュー
+ビューのテンプレートの実際の表示を簡単に認識するために、メールプレビューという裏技がある  
+特殊なURLにアクセスするとメールのメッセージをその場でプレビューでき、実際に送信しなくても確認できる  
+`config/environments/development.rb` で編集  
+`test/mailers/previews/user_mailer_preview.rb` Userメイラープレビュー  
+自動生成のままじゃ動かないので`account_activation`の引数には有効なuserオブジェクトを渡す必要あり  
 ```
+# localhost:3000/rails/mailers/user_mailer/account_activation にアクセス
+def account_activation
+  user = User.first
+  user.activation_token = User.new_token
+  UserMailer.account_activation(user)
+end
+```
+`user.activation_token`の値にはアカウント有効化のトークンが必要なので、代入の省力はできないが`activation_token`は仮の属性でしかないので、データベースのユーザーはこの値は実際には持っていない  
+
+## 11.2.3 送信メールのテスト
+このメールプレビューのテストも作成して、プレビューをダブルチェックできるようにする  
+`test/mailers/user_mailer_test.rb` Userメイラーのテスト(自動生成)
+  
