@@ -141,4 +141,72 @@ end
 
 ## 11.2.3 送信メールのテスト
 このメールプレビューのテストも作成して、プレビューをダブルチェックできるようにする  
-`test/mailers/user_mailer_test.rb` Userメイラーのテスト(自動生成)  
+`test/mailers/user_mailer_test.rb` Userメイラーのテスト(自動生成)
+`CGI.eascape(user.email)`を使えば、テスト用のユーザーのメールアドレスをエスケープすることもできる
+`config/environments/test.rb`(テストのドメインホストを設定する)
+` config.action_mailer.default_url_options = { host: 'example.com' }`を追加するをテストがスイートされる  
+
+## 11.2.4 ユーザーのcreateアクションを更新
+あとはユーザー登録を行うcreateアクションに数行追加するだけでメイラーをアプリケーションで実際に使うことができる  
+`app/controllers/users_controller.rb`  ユーザー登録にアカウント有効化を追加する  
+アクションの内容
+* 登録されたメールにメールを送る
+* リダイレクト先をルートURLに変更
+`test/integration/users_signup_test.rb` 失敗するテストを一時的にコメントアウトにする
+
+## 11.3 アカウントを有効化する
+今度はAccountActivationsコントローラのeditアクションを書いていく  
+又、アクションへのテストを書き、しっかりテストできていることができたら、AccountActivationsコントローラからUserモデルにコードを移していく作業(リファクタリング)にも取り掛かっていく  
+## 11.3.1 authenticated?メソッドの抽象化
+有効化トークンとメールをそれぞれ`params[:id]`と`params[:email]`で参照できることを思い出すと、パスワードので守ると記憶トークンで学んだことを元に、次のようなコードでユーザーを検索して認証することにする
+```
+user = User.find_by(email: params[:email])
+if user && user.authenticated?(:activation, params[:id])
+```
+
+ここで使っている`authenticated?`メソッドは、アカウント有効化のダイジェストと、渡されたトークンが一致するかどうかをチェックする。ただし、このメソッドは記憶トークン用なので今は正常に動作しない。ので、
+```
+# トークンがダイジェストと一致したらtrueを返す
+def authenticated?(remember_token)
+  return false if remember_digest.nil?
+  BCrypt::Password.new(remember_digest).is_password?(remember_token)
+end
+```
+`remember_digest`はUserモデルも属性なので、を書き換える。  
+今回は、上のコードのrememberの部分をどうにかして編すとして扱いたい。  
+つまり状況に応じて呼び出すメソッドを切り替えたい。  
+`self.FOOBAR_digest`
+これから実装する`authenticated?`メソッドでは、受けとったパラメータに応じて呼び出すメソッドを切り替えるて法を使う。  
+この手法を「***メタプログラミング***」を呼ばれる。  
+簡単にいうと、「プログラムでプログラムを作成する。」  
+ここで重要なのは`send`メソッドの強力極まる機能。  
+このメソッドは、渡されたオブジェクトに「メッセージを送る」ことによって、呼び出されたメソッドを動的に決めることができる。  (例) ->  
+```
+>> user = User.first
+>> user.activation_digest
+=> "$2a$10$4e6TFzEJAVNyjLv8Q5u22ensMt28qEkx0roaZvtRcp6UZKRM6N9Ae"
+>> user.send(:activation_digest)
+=> "$2a$10$4e6TFzEJAVNyjLv8Q5u22ensMt28qEkx0roaZvtRcp6UZKRM6N9Ae"
+>> user.send("activation_digest")
+=> "$2a$10$4e6TFzEJAVNyjLv8Q5u22ensMt28qEkx0roaZvtRcp6UZKRM6N9Ae"
+>> attribute = :activation
+>> user.send("#{attribute}_digest")
+=> "$2a$10$4e6TFzEJAVNyjLv8Q5u22ensMt28qEkx0roaZvtRcp6UZKRM6N9Ae"
+```
+シンボル`:activation`と等しい`attribute`変数を定義して、文字列の式展開(interpolation)を使って引数を正しく組み立ててから、`send`に渡している。文字列`activation`でも同じことができるが、Ruby的にはシンボル  
+`#{attribute}_digest`  
+シンボル文字列どちら使っても、上のコードは、  
+`activation_digest`  
+
+`send`メソッドの動作原理がわかったので、この仕組みを利用して`authenticated?`メソッドを書き換えてみる。  
+`model/user.rb`
+```
+def authenticated?(attribute, token)
+  #文字列の式展開も利用すると、下記のコードになる (self省略)
+  digest = send("#{attribute}_digest")
+  return false if digest.nil?
+  BCrypt::Password.new(digest).is_password?(token)
+end
+```
+このままテストすると、`current_user`メソッドと`nil`ダイジェストのテストの両方で`authenticated?`が古いままになっており、引数も2つではなく1つのままのため  
+これを解消するために、両者を更新して、新しい一般的なメソッドを使うようにする。  
