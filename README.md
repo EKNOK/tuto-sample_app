@@ -209,4 +209,55 @@ def authenticated?(attribute, token)
 end
 ```
 このままテストすると、`current_user`メソッドと`nil`ダイジェストのテストの両方で`authenticated?`が古いままになっており、引数も2つではなく1つのままのため  
-これを解消するために、両者を更新して、新しい一般的なメソッドを使うようにする。  
+これを解消するために、両者を更新して、新しい一般的なメソッドを使うようにする。
+
+## 11.3.2 editメソッドアクションで有効化
+`authenticated?`が完了。  
+これでeditアクションを書く準備ができた。  
+このアクションは`params`ハッシュで渡されたメールアドレスに対応するユーザーを認証する。
+ユーザーが有効であることを確認する中核は、下記の部分。  
+`if user && !user.activaed? && user.authenticated?(:activation, params[:id])`  
+`user.activated?`に注目。  
+このコードは、既に有効になっているユーザーを誤って再度有効化しないために必要。  
+正当であろうとなかろうと、有効化が行われるとユーザーはログイン状態になる。  
+もしこのコードがなければ、攻撃者がユーザーの有効化リンクを後から盗み出してクリックするだけで、本当のユーザーとしてログインできてしまう。  
+そうした攻撃を防ぐためにこのコードは非常に重要。  
+  上の論理値に基づいてユーザーを認証するには、ユーザーを認証してから`activated_at`タイムタンプを更新する必要がある
+```
+user.update_attribute(:activaed, true)
+user.update_attribute(:activated_at, Time.zone.now)
+```
+上のコードを`edit`アクションで使う。  
+下記のコードでは有効かトークンが向こうだった場合の処理も行われている点に注目。  
+トークンが無効になるようなことは実際には滅多にないが、もしそうなった場合はルートURLにリダイレクトされる仕組み。  
+`app/controllers/account_activations_controller.rb`  (アカウントを有効化する`edit`アクション)
+
+```
+class AccountActivationsController < ApplicationController
+
+  def edit
+    user = User.find_by(email: params[:email])
+    if user && !user.activated? && user.authenticated?(:activation, params[:id])
+      user.update_attribute(:activated,    true)
+      user.update_attribute(:activated_at, Time.zone.now)
+      log_in user
+      flash[:success] = "Account activated!"
+      redirect_to user
+    else
+      flash[:danger] = "Invalid activation link"
+      redirect_to root_url
+    end
+  end
+end
+```
+webページで新規登録して、サーバーのログのaタグのリンクを開くと、  
+ユーザー認証が完了となる。  
+  もちろん、この時点ではユーザーのログイン方法を変更していないので、ユーザーの有効化にはまの意味もない。  
+ユーザーの有効化が役立つためには、ユーザーが有効である場合にのみログインできるようにログイン方法を変更する必要がある。  
+これを行うためには、`user.activated?`がtrueの場合のみログインを許可して、そうでない場合はルートURLにリダイレクトして`warning`で警告する。  
+`app/controllers/sessions_controller.rb/createアクション`(有効でないユーザーがログインすることのないようにする)  
+これで、ユーザー有効か昨日の大まかな部分については実装できた。  
+(有効化されていないユーザーが表示されないようにする必要もあり。)  
+この時点では、テストはRED、なのでリファタリングを少々次で追加する
+
+## 1.3.3 有効化のテストとリファタリング
