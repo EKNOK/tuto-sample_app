@@ -109,9 +109,7 @@ end
 
 *メイラーの作成*  (viewに作成される)
 
-```$ rails g mailer UserMailer account_activation password_reset
-
-```
+`$ rails g mailer UserMailer account_activation password_reset`
 
 今回必要となる`acount_activation`メソッドと12章で必要となる`password_reset`メソッドを自動生成  
 生成したメイラーごとに、ビューのテンプレートが2つずつ生成
@@ -121,7 +119,7 @@ HTML用のメールを拒否している又対応していない場合がある�
   `app/mailers/application_mailer.rb` 生成されたApplicationメイラー
   `app/mailers/user_mailer.rb` 生成されたUserメイラー
 Applicationメイラーでデフォルトとなるform(差出人)、layoutを設定  
-Userメイラーでインスタンス変数や宛先 mail to: _FULLIN_ を設定
+Userメイラーでインスタンス変数や宛先 mail to: _FULL_IN_ を設定
 
 ## 11.2.2 送信メールのプレビュー
 ビューのテンプレートの実際の表示を簡単に認識するために、メールプレビューという裏技がある  
@@ -142,4 +140,3 @@ end
 ## 11.2.3 送信メールのテスト
 このメールプレビューのテストも作成して、プレビューをダブルチェックできるようにする  
 `test/mailers/user_mailer_test.rb` Userメイラーのテスト(自動生成)
-  
