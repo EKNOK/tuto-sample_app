@@ -109,7 +109,9 @@ end
 
 *メイラーの作成*  (viewに作成される)
 
-`$ rails g mailer UserMailer account_activation password_reset`
+```
+$ rails g mailer UserMailer account_activation password_reset
+```
 
 今回必要となる`acount_activation`メソッドと12章で必要となる`password_reset`メソッドを自動生成  
 生成したメイラーごとに、ビューのテンプレートが2つずつ生成
@@ -139,4 +141,4 @@ end
 
 ## 11.2.3 送信メールのテスト
 このメールプレビューのテストも作成して、プレビューをダブルチェックできるようにする  
-`test/mailers/user_mailer_test.rb` Userメイラーのテスト(自動生成)
+`test/mailers/user_mailer_test.rb` Userメイラーのテスト(自動生成)  
