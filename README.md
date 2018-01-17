@@ -275,9 +275,40 @@ webページで新規登録して、サーバーのログのaタグのリンク�
 .  
 テストができたので、ユーザー操作の一部をコントローラからモデルに移動するというささやかなリファタリングを行う準備ができた。  
 ここでは、`activate`メソッドを作成してユーザーの有効化メールを更新し、  
-`send_activatio_email`メソッドを作成して有効化メールを送信する。
+`send_activation_email`メソッドを作成して有効化メールを送信する。
 .  
 .  
-`app/models/user.rb` (Userモデルにユーザー有効化メソッドを追加する)  
+`app/models/user.rb` (Userモデルにユーザー有効化メソッドを追加する)
+|  
+v  
 `app/controllers/users_controller.rb` (ユーザーモデルオブジェクトからメールを送信する)  
 `app/controllers/account_activations_controller.rb` (ユーザーモデルオブジェクト経由でアカウントを有効化する)  
+
+Userモデルに追加したコードでは`user.`という記法を使っていない点に注目。  
+Userモデルにはそのような変数はないので、`user.`があるとエラーになる。  
+```
+-user.update_attribute(:activated,    true)
+-user.update_attribute(:activated_at, Time.zone.now)
++update_attribute(:activated,    true)
++update_attribute(:activated_at, Time.zone.now)
+```  
+(`user`を`self`に切替えるという手もあるが、`self`はモデル内では必須ではない)
+Userメイラー内の呼び出しでは、`@user`が`self`に変更されている点にも注目。  
+
+```
+-UserMailer.account_activation(@user).deliver_now
++UserMailer.account_activation(self).deliver_now
+```
+.  
+.  
+どんな簡単なリファタリングであっても、この手の変更はつい忘れてしまうもの。  
+テストをきちんと書くことで、この種の見落としを検証できる。  
+
+## 11.4 本番環境でのメール送信
+ここまでの実装で、development環境に置けるアカウント有効化の流れは完成  
+次は、サンプルアプリケーションの設定を変更して、  
+production環境で実際にメールの送信できるようにしてみる。  
+具体的には、まず無料のサービスを利用してメール送信の設定を行い、続いて  
+アプリケーションの設定とデプロイを行う。  
+.  
+.  
