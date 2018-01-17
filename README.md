@@ -312,3 +312,7 @@ production環境で実際にメールの送信できるようにしてみる。
 アプリケーションの設定とデプロイを行う。  
 .  
 .  
+本番寛容からメール送信するために、「SendGrid」というHerokuアドオンを利用してアカウントを検証する。  
+本ゆーとリアルでは「starter tier」というサービスを使う。  
+これは1日400通までの制限で無料のもの。
+`$ heroku addons:create sendgrid:starter`
