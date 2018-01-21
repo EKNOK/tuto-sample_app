@@ -326,7 +326,7 @@ production環境で実際にメールの送信できるようにしてみる。
 全てが同じとは言えない。  
 例えば、アカウントの有効化の時と異なり、  
 パスワードの再設定する場合はビューを1つに変更する必要があり、  
-また、新しいフォームが新たに２つ(メールレイアウト用と新しいパスワードの痩身用)が必要になる  
+また、新しいフォームが新たに２つ(メールレイアウト用と新しいパスワードの送信用)が必要になる  
 .  
 .   
 コードを実際に書く前に、パスワード再設定の想定手順をモックアップで確かめる。  
@@ -425,3 +425,31 @@ Userモデル内のコードは、`before_create`コールバック内で使わ�
 .  
 .  
 ## 12.2 パスワード再設定のメール送信
+
+12.1のPasswordResetsコントローラで`create`アクションがほぼ動作するとことまで持ってきた。  
+残すところは、パスワード再設定に関するメールを送信する部分。  
+11.1をやっていれば、Userメイラー(`app/mailers/user_mailer.rb`)を作成した時に、デフォルトの`password_reset`メソッドもまとめて生成されているはずだが、必要であれば、生成する(`accouunt_activation`)に関するメソッド。  
+.  
+.  
+### 12.2.1 パスワード再設定のメールとテンプレート
+11.3.3ではUserメイラーにあるコードをUesrモデルに移すリファタリングを行った。  
+同様のリファタリング作業をパスワード再設定に対しても行っていく。  
+```
+UserMailer.password_reset(self).deliver_now
+```
+
+上のコードの実装に必要なメソッドは、11.2で実装したアカウント有効化メイラーとほぼ一緒。  
+最初に、Userメイラーに`password_reset`メソッドを生成して、続いて、テキストメールのテンプレートとHTMLメールのテンプレートをそれぞれ定義する。  
+```app/mailers/user_mailer.rb
+class UserMailer < ApplicationMailer
+.
+.
+  def password_reset(user)
+    @user = user
+    mail to: user.email, subject: "Password reset"
+  end
+end
+```
+`app/views/user_mailer/password_reset.text.erb` (パスワード再設定用のテンプレート(テキスト))  
+`app/views/user_mailer/password_reset.html.erb` (パスワード再設定用のテンプレート(HTML))  
+アカウント有効化メールの場合（11.2）と同様、Railsのメールプレビュー機能でパスワード再設定のメールでプレビューする。そのためのコードはリスト11.18と同じ。  
