@@ -440,7 +440,6 @@ UserMailer.password_reset(self).deliver_now
 
 上のコードの実装に必要なメソッドは、11.2で実装したアカウント有効化メイラーとほぼ一緒。  
 最初に、Userメイラーに`password_reset`メソッドを生成して、続いて、テキストメールのテンプレートとHTMLメールのテンプレートをそれぞれ定義する。  
-<<<<<<< HEAD
 ```
 # app/mailers/user_mailer.rb
 =======
