@@ -503,5 +503,60 @@ f.hidden_field_tag :email, @user.email
 後者では、`params[:user][:email]`に保存されてしまう。  
 .  
 .  
-今度は、このフォームを描画するためにPasswordResetsコントローラの`edit`アクション内で
-###
+今度は、このフォームを描画するためにPasswordResetsコントローラの`edit`アクション内で`@user`インスタンス変数を定義していく。  
+アカウント有効化の場合と同様、`params[:email]`のメールアドレスに対応するユーザーをこの変数に保存する。  
+続いて、`params[:id]`の再設定用のトークンと、11.26で抽象化した`authenticated?`メソッドを使い、このユーザーが正当なユーザーである(ユーザーが存在する、有効化されている、認証済みである)ことを確認する。
+`edit`アクションと`update`アクションのどちらの場合も正当な`@user`が存在する必要があるので、　　
+いくつかのbeforeフィルタを使って`@user`の検索とバリデーションを行う 　
+`app/controllers/password_resets_controller.rb` (パスワード再設定の`edit`アクション)  
+```
+class PasswordResetsController < ApplicationController
+  before_action :get_user,   only: [:edit, :update]
+  before_action :valid_user, only: [:edit, :update]
+  .
+  .
+  .
+  def edit
+  end
+
+  private
+
+    def get_user
+      @user = User.find_by(email: params[:email])
+    end
+
+    # 正しいユーザーかどうか確認する
+    def valid_user
+      unless (@user && @user.activated? &&
+              @user.authenticated?(:reset, params[:id]))
+        redirect_to root_url
+      end
+    end
+end
+```
+上では次のコードを使っている。
+```
+authenticated?(:reset, params[:id])
+```
+これと下のコードを比較する。
+```
+authenticated?(:remember, cookies[:remember_token])
+```
+このコードは11.28で使われたコードで、、
+```
+authenticated?(:activation, params[:id])
+```
+これは11.31で使ったコード。  
+以上にコードが認証メソッドである。  
+また今回、追加したコードで全て実装が完了したことになる。
+.  
+.  
+話を戻して、これでリンクを開いたときに、パスワード再設定のフォームが出力されるようになりました。  
+### 12.3.2 パスワードを更新する。
+AccountActivationsコントローラの`edit`アクションでは、ユーザーの有効化ステータスを`false`から`true`に変更したが、今回の場合はフォームから新しいパスワードを送信するようになっている。  
+したがって、フォームから送信に対応する`update`アクションは必要になる。  
+この`update`アクションでは、次の4つのケースを考慮する必要がある。  
+1. パスワード再設定の有効期限が切れていないか。
+2. 無効なパスワードであれば、失敗させる。(理由も表示)
+3. 新しいパスワードがから文字列になっていないか(ユーザー編集ではOK)
+4. 新しいパスワードが正しければ、更新する。
