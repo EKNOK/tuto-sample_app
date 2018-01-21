@@ -719,3 +719,13 @@ assert_select "input[name=email][type=hidden][value=?]", user.email
 <input id="email" name="email" type="hidden" value="michael@example.com">
 ```
 以上でテストは GREEN になる。  
+**演習**
+## 12.4 本番環境でのメール送信(再掲)
+これでパスワード再設定の実装も終わり。  
+あとは、全勝と同様に、development環境だけでなく、  
+production環境でも動くようにするだけ。  
+セットアップの手順はアカウント有効化と全く同じ。  
+.  
+.  
+本番環境からメール送信するために、「SendGrid」というHerokuアドオンを利用してアカウントを検証する。  
+本チュートリアルでは、「starter tier」というサービスを使うことでi日400通まで無料で使うことができる。  
