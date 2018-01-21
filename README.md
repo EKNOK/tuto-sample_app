@@ -630,3 +630,92 @@ end
 送信が無効だった場合と有効だった場合の画面をそれぞれ表示できる。  
 
 ### 12.3.3 パスワードの再設定をテストする。
+この項では、12.16の2つ(また3つ目は演習)の分岐、つまり痩身に成功した場合と失敗した場合の統合テストを作成する。  
+まずはパスワード再設定のテストファイルを生成する。  
+`test/integration/password_resets_test.rb`  
+パスワード再設定をテストする手順は、アカウント有効化のテストと多くの共通点があるが、  
+テストの冒頭部分には次のような違いがある。  
+最初に「forgot password」フォームを表示して無効なメールアドレスを送信する。  
+後者では、パスワード再設定トークンが作成され、再設定用メールが送信される。  
+続いて、メールのリンクを開いて、無効な情報を送信し、  
+次にそのリンクから有効な情報を送信して、  
+それぞれが期待通りに動作することを確認する。  
+*このテストはコードリーディングのよい練習台なるのでみっちりお読みください..*  
+.  
+`test/integration/password_resets_test.rb` (パスワード再設定の統合テスト)  
+```
+require 'test_helper'
+
+class PasswordResetsTest < ActionDispatch::IntegrationTest
+
+  def setup
+    ActionMailer::Base.deliveries.clear
+    @user = users(:michael)
+  end
+
+  test "password resets" do
+    get new_password_reset_path
+    assert_template 'password_resets/new'
+    # メールアドレスが無効
+    post password_resets_path, params: { password_reset: { email: "" } }
+    assert_not flash.empty?
+    assert_template 'password_resets/new'
+    # メールアドレスが有効
+    post password_resets_path,
+         params: { password_reset: { email: @user.email } }
+    assert_not_equal @user.reset_digest, @user.reload.reset_digest
+    assert_equal 1, ActionMailer::Base.deliveries.size
+    assert_not flash.empty?
+    assert_redirected_to root_url
+    # パスワード再設定フォームのテスト
+    user = assigns(:user)
+    # メールアドレスが無効
+    get edit_password_reset_path(user.reset_token, email: "")
+    assert_redirected_to root_url
+    # 無効なユーザー
+    user.toggle!(:activated)
+    get edit_password_reset_path(user.reset_token, email: user.email)
+    assert_redirected_to root_url
+    user.toggle!(:activated)
+    # メールアドレスが有効で、トークンが無効
+    get edit_password_reset_path('wrong token', email: user.email)
+    assert_redirected_to root_url
+    # メールアドレスもトークンも有効
+    get edit_password_reset_path(user.reset_token, email: user.email)
+    assert_template 'password_resets/edit'
+    assert_select "input[name=email][type=hidden][value=?]", user.email
+    # 無効なパスワードとパスワード確認
+    patch password_reset_path(user.reset_token),
+          params: { email: user.email,
+                    user: { password:              "foobaz",
+                            password_confirmation: "barquux" } }
+    assert_select 'div#error_explanation'
+    # パスワードが空
+    patch password_reset_path(user.reset_token),
+          params: { email: user.email,
+                    user: { password:              "",
+                            password_confirmation: "" } }
+    assert_select 'div#error_explanation'
+    # 有効なパスワードとパスワード確認
+    patch password_reset_path(user.reset_token),
+          params: { email: user.email,
+                    user: { password:              "foobaz",
+                            password_confirmation: "foobaz" } }
+    assert is_logged_in?
+    assert_not flash.empty?
+    assert_redirected_to user
+  end
+end
+```
+
+上のコードの大半は本チュートリアルで概出。
+今回新しいのは`input`タグ。
+```
+assert_select "input[name=email][type=hidden][value=?]", user.email
+```
+上のコードは、`input`タグに正しい名前、type="hidden"、メールアドレスがあるかどうか、確認する。
+
+```
+<input id="email" name="email" type="hidden" value="michael@example.com">
+```
+以上でテストは GREEN になる。  

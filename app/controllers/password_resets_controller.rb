@@ -11,10 +11,10 @@ class PasswordResetsController < ApplicationController
     if @user
       @user.create_reset_digest
       @user.send_password_reset_email
-      flash[:info] = "Email sent with password reset instructions !"
+      flash[:info] = "Email sent with password reset instructions"
       redirect_to root_url
     else
-      flash.now[:danger] = "Email address not found !"
+      flash.now[:danger] = "Email address not found"
       render 'new'
     end
   end
@@ -23,15 +23,16 @@ class PasswordResetsController < ApplicationController
   end
 
   def update
-    if params[:user][:password].empty? # パスワードが空担っていないか
+    if params[:user][:password].empty? # パスワードが空になっていないか
       @user.errors.add(:password, :blank)
       render 'edit'
-    elsif @user.update_attribute(user_params) # パスワードが正しければ、更新
+    elsif @user.update_attributes(user_params) # パスワードが正しければ、更新
       log_in @user
       flash[:success] = "Password has been reset !"
       redirect_to @user
+    else
+      render 'edit'  # 無効なパスワードの対応
     end
-    render `edit` # 無効なパスワードの対応
   end
 
   private
@@ -60,5 +61,4 @@ class PasswordResetsController < ApplicationController
         redirect_to new_password_reset_url
       end
     end
-
 end
