@@ -16,8 +16,7 @@ class MicropostTest < ActiveSupport::TestCase
     assert_not @micropost.valid?
   end
 
-<<<<<<< HEAD
-=======
+
   test "content should be present" do
     @micropost.content = "   "
     assert_not @micropost.valid?
@@ -27,6 +26,5 @@ class MicropostTest < ActiveSupport::TestCase
     @micropost.content = "a" * 141
     assert_not @micropost.valid?
   end
->>>>>>> master
 
 end
