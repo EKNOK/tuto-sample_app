@@ -710,14 +710,13 @@ end
 
 上のコードの大半は本チュートリアルで概出。
 今回新しいのは`input`タグ。
-```
-assert_select "input[name=email][type=hidden][value=?]", user.email
-```
+
+`assert_select "input[name=email][type=hidden][value=?]", user.email`
+
 上のコードは、`input`タグに正しい名前、type="hidden"、メールアドレスがあるかどうか、確認する。
 
-```
-<input id="email" name="email" type="hidden" value="michael@example.com">
-```
+`<input id="email" name="email" type="hidden" value="michael@example.com">`
+
 以上でテストは GREEN になる。  
 **演習**
 ## 12.4 本番環境でのメール送信(再掲)
@@ -750,6 +749,7 @@ Micropostモデルは、マイクロポストの内容を保存する`content`�
 | user_id      | integer       |
 | created_at   | datetime      |
 | updated_at   | datetime      |
+
 .  
 .  
 このモデルでは、マイクロポストの投稿に`String`型ではなく、  
@@ -764,4 +764,83 @@ Micropostモデルは、マイクロポストの内容を保存する`content`�
 これらの理由から、デメリットよりもメリットの方が多い。  
 .  
 .  
-6.1でUserモデルを生成したとき同様に、Railsの`g model`コマンドを使いMicropostモデルを生成していく。
+6.1でUserモデルを生成したとき同様に、Railsの`g model`コマンドを使いMicropostモデルを生成していく。  
+`rails g model Micropost content:text user:reference`
+これで、Micropostモデルが生成される。  
+つまり、`ApplicationRecord`を継承したモデルが作られる。  
+ただし、今回は生せされたモデルの中に、ユーザーと１対１の関係であることを表す`belongs_to`のコードも追加される。  
+これは先ほどのコマンドで`user:references`の引数も含めていたから。  
+.  
+.  
+データベースに`users`テーブルを作るマイグレーションを生成したときと同様に、この`generate`コマンドは`microposts`テーブルを生成するためのマイグレーションを生成します。  
+.  
+.  
+Userモデルとの最大の違いは`references`型を利用している点。  
+これを利用すると、自動的にインデックスと外部キー参照付きの`user_id`カラムが追加され、UserとMicropostを関連付ける下準備をしてくれる。  
+Userモデルのときと同じで、Micropostモデルのマイグレーションファイルでも`t.timestamps`という行(マジックカラム)が自動的に生成される。  
+これにより、`created_at`と`updated_at`というカラムが追加される。  
+なお、`created_at`カラムはマイクロポストを改良していく点について、必要なカラムになる。
+
+```
+class CreateMicroposts < ActiveRecord::Migration[5.0]
+  def change
+    create_table :microposts do |t|
+      t.text :content
+      t.references :user, foreign_key: true
+
+      t.timestamps
+    end
+    add_index :microposts, [:user_id, :created_at]
+  end
+end
+```
+
+ここで、`user_id`と`created_at`カラムにインデックスが付与されている点に注目。  
+こうすることで、`user_id`に関連付けた全てのマイクロポストを作成時刻の逆順で取り出しやすくなる。  
+また、`user_id`と`created_at`の両方を1つの配列に含まれている点にも注目。  
+こうすることでActive Recordは ***両方のキー*** を同時に扱う ***複合機ーインデックス*** を作成する。  
+ここで、マイグレーションを使い、データベースを更新する。  
+
+### 13.1.2 Micropostのバリデーション
+基本的なモデルはできたので、次にバリデーションを追加する。  
+Micropostモデルを作成したときに、`user_id`をもたせるようにしたので、これを使って慣習的にただしくActive Recordの関連付けを実装していく。  
+まずは`Micropost`モデル単体を動くようにしてみる。  
+.  
+.  
+Micropostの初期テストはUserモデルの初期テストと似ている。  
+まずは`setup`でfixtureのサンプルユーザーと紐付けた新しいマイクロポストを作成していく。  
+次に、再生したマイクロポストが有効かどうかをチェックしていく。  
+最後に、あらゆるマイクロポストはユーザーのidを持っているべきなので、`user_id`の存在性のバリデーションに対するテストを追加していく。
+`validates :user_id, presence: true`
+.  
+.  
+ちなみにRails5では、バリデーションを追加しなくてもテストが成功する。  
+しかし、ハイライトした「慣習的な意味でただしくない」というコードを書いた場合でのみ発生する。  
+この部分を「慣習的に正しい」コードで実装すると、`user_id`に対する存在性のバリデーションが期待通りに動く。  
+これで、テストがGREENになる。  
+.  
+.  
+次にマイクロポストの`content`属性に対するバリデーションを追加する。  
+`user_id`属性と同様に、`content`属性も存在する必要があり、さらにマイクロポストが140(micro)文字以内の制限を加える。  
+.  
+.  
+Userモデルにバリデーションを追加したときと同様に、テスト駆動開発でMicropostモデルのバリデーションを追加していく。  
+基本的には、Userモデルの時と同じようなバリデーションを追加していく。  
+`test/models/micropost_test.rb` (Micropostモデルのバリデーションに対するテスト)  
+`app/models/micropost.rb` (Micropostモデルのバリデーション)  
+これで、全てのテストがGREENになる。  
+
+### 13.1.3 User/Micropostの関連付け
+Webアプリケーション用のデータモデルを構築するにあたって、個々のモデル間での ***関連付け*** を十分に考えておくことが重要。  
+今回の場合は、それぞれのマイクロポストは1人のユーザーと関連付けられ、それぞれのユーザーは（潜在的に）複数のマイクロポストと関連付けられる。  
+これらの関連付けを実装するための一環として、Micropostモデルに対するテストを作成し、さらにUserモデルにいくつかテストを追加する。  
+この節で定義する`belongs_to/has_many`関連付けを使うことで、下のメソッドをRailsで使えるようになる。  
+
+| メソッド                       | 用途                         |
+|:------------------------------|:----------------------------|
+| `micropost.user`              | Micropostに紐付いたUserオブジェクトを返す  |
+| `user.microposts`             | Userのマイクロポストの集合を返す           |
+| `user.microposts.create(arg)` | `user`に紐付いたマイクロポストを作成する    |
+| `user.microposts.create!(arg)` | `user`に紐付いたマイクロポストを作成する(失敗時に例外を発生) |
+| `user.microposts.build(arg)`   | `user`に紐付いた新しいMicropostオブジェクトを返す |
+| `user.microposts.find_by(id: 1)`   | userに紐付いていて、`id`が`1`であるマイクロポストを検索する |
