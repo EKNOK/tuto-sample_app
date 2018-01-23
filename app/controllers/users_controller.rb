@@ -6,6 +6,7 @@ class UsersController < ApplicationController
 
   def index
     @users = User.paginate(page: params[:page])
+    @micropost = @user.microposts.paginate(page: params[:page])
   end
 
   def new
