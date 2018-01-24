@@ -1019,3 +1019,24 @@ Micropostsリソースの開発では、Micropostsコントローラないのア
 `app/controllers/application_controller.rb` (`logged_in_user`メソッドをApplicationコントローラに移す)  
 `app/controllers/users_controller.rb` (Usersコントローラ内の`logged_in_user`フィルターを削除する)  
 Micropostsコントローラからも`logged_in_user`メソッドを呼び出せるようになったので、これによって、`create`アクションや、`destroy`アクションに対するアクセス制限が、beforeフィルターで簡単に実装できるようになった。  
+
+### 13.3.2 マイクロポストを作成する
+第7章では、HTTP POSTリクエストをUsersコントローラの`create`アクションに発行するHTMLフォームを作成することで、ユーザーのサインアップを実装した。マイクロポスト作成の実装もこれと似ています。主な違いは、別の micropost/new ページを使う代わりに、ホーム画面 (つまりルートパス) にフォームを置くという点。  
+.  
+.  
+最後にホーム画面を実装したときは、[Sign up now!] ボタンが中央にあった。マイクロポスト作成フォームは、ログインしている特定のユーザーのコンテキストでのみ機能するので、この節の一つの目標は、ユーザーのログイン状態に応じて、ホーム画面の表示を変更すること。
+.  
+.  
+次に、マイクロポストのcreateアクションを作り始める。このアクションも、ユーザー用アクションと似ている。違いは、新しいマイクロポストをbuildするためにUser/Micropost関連付けを使っている点。micropost_paramsでStrong Parametersを使っていることにより、マイクロポストのcontent属性だけがWeb経由で変更可能になっている点に注目。
+`app/controllers/microposts_controller.rb` (Misropostsコントローラの`create`アクション)  
+`app/views/static_pages/home.html.erb` (Homeページ (/) にマイクロポストの投稿フォームを追加する)   
+`app/views/shared/_user_info.html.erb`  (サイドバーで表示するユーザー情報のパーシャル)  
+`app/views/shared/_micropost_form.html.erb` ( マイクロポスト投稿フォームのパーシャル)  
+プロフィールサイドバー13章.24のときと同様、のユーザー情報にも、そのユーザーが投稿したマイクロポストの総数が表示されていることに注目。ただし少し表示に違いがある。  
+プロフィールサイドバーでは、 “Microposts” をラベルとし、「Microposts (1)」と表示することは問題ない。しかし、今回のように “1 microposts” と表示してしまうと英語の文法上誤りになってしまいます。そこで、7.3.3で紹介した`pluralize`メソッドを使って “1 micropost” や “2 microposts” と表示するように調整していく。  
+.  
+.  
+次はマイクロポスト作成フォームを定義する。  
+`app/views/shared/_micropost_form.html.erb` (マイクロポスト投稿フォームのパーシャル)  
+`app/controllers/static_pages_controller.rb` (`home`アクションにマイクロポストのインスタンス変数を追加する
+)
