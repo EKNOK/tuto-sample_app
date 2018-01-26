@@ -1124,7 +1124,78 @@ $ rails g integration_test microposts_interface
 `test/integration/microposts.interface_test.rb` (マイクロポストUIに対する統合テスト)  
 
 ## 13.4 マイクロポストの画像投稿
-ここまででマイクロポストに関する基本的な操作はすべて実装できた。　　
-この節では、応用編として画像付きマイクロポストを投稿できるようにしてみる。手順としては、まずは開発環境用のβ版を実装し、その後、いくつかの改善をとおして本番環境用の完成版を実装する。
+ここまででマイクロポストに関する基本的な操作はすべて実装できた。  
+この節では、応用編として画像付きマイクロポストを投稿できるようにしてみる。手順としては、まずは開発環境用のβ版を実装し、その後、いくつかの改善をとおして本番環境用の完成版を実装する。  
 .  
-画像アップロード機能を追加するためには、2つの視覚的な要素が必要。1つは画像をアップロードするためのフォーム、もう1つは投稿された画像そのもの。
+画像アップロード機能を追加するためには、2つの視覚的な要素が必要。1つは画像をアップロードするためのフォーム、もう1つは投稿された画像そのもの。  
+
+#  13.4.1 基本的な画像アップロード
+投稿した画像を扱ったり、その画像をMicropostモデルと関連付けするために、今回と [carrierwave](https://github.com/carrierwaveuploader/carrierwave) いう画像アップローダーを使います。まずは *carrierwave* gemを`Gemfile`に追加しましょう。このとき、*mini_magick* gemと *fog* gemsも含めている点に注目。これらのgemは画像をリサイズしたり、本番環境で画像をアップロードするために使う。
+`Gemfile`に carrierwave を追加。  
+`$ bundle install`  
+Carrierwaveを導入すると、RAilsのゲネレーターで画像アップローダーが生成できるようになる。早速コマンドを実行する。(以下。画像をimageとすると、一般的すぎるので、今回は`picture`と呼ぶ。)  
+`$ rails g uploader Picture`
+Carrierwaveでアップロードされた画像は、ActiveRecordモデルの属性と関連付けられているべき。関連付けられる属性には、画像のファイル名が格納されるため、String型にしておく。拡張したマイクロポストのデータモデル↓。  
+
+| Microposts                 | |
+|:-------------|:--------------|
+| id           | integer       |
+| content      | text          |
+| user_id      | integer       |
+| created_at   | datetime      |
+| updated_at   | datetime      |
+| picture      | string        |
+
+必要となる`picture`属性をMicropostモデルに追加するために、マイグレーションファイルを生成し、開発環境データベースに適応する。  
+`$ rails g migration add_picture_to_microposts picture:string`  
+carrierwaveに画像と関連付けられたモデルを伝えるためには、`mount_uploader`というメソッドを使う。このメソッドは、引数に属性名のシンボルと生成されたアップローダーのクラス名を取る。  
+`picture_uploader.rb`というファイルで`PictureUploader`クラスが定義されている。  
+Micropostモデルにアップローダーを追加した結果を書く。  
+`app/models/micropost.rb` (Micropostモデルに画像を追加する)  
+Railsサーバーを再起動させて、テストスイートを走らせるとGREEN。  
+.  
+.  
+Homeページにアップローダを追加するためには、マイクロポストのフォームに`file_field`タグを含める必要がある。  
+`app/views/shared/_micropost_form.html.erb` ( マイクロポスト投稿フォームに画像アップローダーを追加する。 )  
+`app/controllers/microposts_controller.rb` (`picture`を許可された属性のリストに追加する)  
+一度画像がアップロードされれば、Micropostパーシャルの`image_tag`ヘルパーでその画像を描画できるようになる。また、画像のないテキストのみのマイクロポストでは、画像を表示されないようにするために、`picture?`という論理値を返すメソッドを使っている点に注目。このメソッドは、画像用の属性名に応じて、Carrierwaveが自動的に生成してくれる。  
+`app/views/microposts/_micropost.html.erb` (マイクロポストの画像表示を追加する)  
+
+### 13.4.2 画像の検証
+ここでは、欠点をなおす。
+- アップロードされた画像に制限がない。
+この欠点をなおすために、画像サイズやフォーマットに対するバリデーションを実装し、サーバー用とクライアント用の両方に追加する。  
+.  
+.  
+最初のバリデーションでは、有効な画像の種類を制限していくが、これは、Carrierwaveのアップローダーの中にヒントがあり、生成されたアップローダーの中にコメントアウトされたコードがあるが、ここのコメントアウトを取り消すことで、画像のファイル名から有効な拡張子(PNG/GIF/JPEGなど)を検証することができる。  
+`app/uploaders/picture_uploader.rb` (画像フォーマットのバリデーション)  
+
+２つ目のバリデーションでは、画像のサイズを制御する。これは、`Micropost`モデルに書き足していく。先ほどのバリデーションとは異なり、ファイルサイズに対するバリデーションはRailsの既存のオプション（`picture`や`length`など）にはない。したがって、今回は手動で`picture_size`の独自のバリデーションを定義する。独自のバリデーションを定義するにあたって今まで使っていた`validates`ではなく、`validate`メソドを使っている点に注目。  
+`app/models/micropost.rb` (画像に対するバリデーションを追加する)  
+この`validate`エソッドでは、引数にシンボル (`:picture_size`)
+を取り、そのシンボル名に対応したメソッドを呼び出す。また呼び出された`picture_size`メソッドでは、5MBを上限とし、これを超えたら、カスタマイズしたエラーメッセージを`errors`コレクションに追加していく。  
+.  
+.  
+定義した画像のバリデーションをビューに組み込むために、クライアント側の2つの処理を追加する。まずは、フォーマットのバリデーションを反映するためには、`file_field`タグに`accept`パラメータを付与して使う。  
+`<%= f.file_field :picture, accept: 'image/jpeg,image/gif,image/png' %>`  
+この時、acceptパラメータでは、許可したファイル形式をMINEタイプで指定するようにする。  
+.  
+.  
+知木に大きすぎるファイルサイズに対して警告を出すために、ちょっとしたJSを書き加える。  
+こうすることで、長すぎるアップロード時間を防いだり、サーバーへの負荷を抑えたりすることができる。  
+```
+$('#micropost_picture').bind('change', function() {
+  var size_in_megabytes = this.files[0].size/1024/1024;
+  if (size_in_megabytes > 5) {
+    alert('Maximum file size is 5MB. Please choose a smaller file.');
+  }
+});
+```
+jQueayは今回扱わないので、詳細は解説はしないが上のコードでは、（`#`）CSS idの`micropost_picture`を含んだ要素を見つけ出し、この要素を監視していく。  
+そしてこのidを持った要素を見つけ出し、この要素(マイクロポストのフォーム)を監視していく。つまり、このCSS id を持つ要素が変化した時、このjQueayの関数が動き出す。そして、ファイルが大きすぎた場合、`alert`メソッドで警告を出すといった仕組み。  
+.  
+.  
+`app/views/shared/_micropost_form.html.erb` (ファイルサイズをjQuearyでチェックする)  
+このコードでは、大きすぎるファイルのアップロードを完全に阻止はできない。例えば、ユーザーはアラートを無視して、アップロードを強行する、といったことが可能。今回は、やらないが、このコードだけでは、不十分であることは覚えておく。  
+
+# 13.4.3 画像のリサイズ
