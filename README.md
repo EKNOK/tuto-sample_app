@@ -1337,3 +1337,12 @@ end
 (ユーザーを削除したら、ユーザーのリレーションシップも同時に削除される必要がある。そのため、関連付けに`dependent: :destroy`も追加していく。)  
 なお、`follower`の関連付けについては、後ほど...   
 しかし、`follower`と`followed`を対照的に実装しておくことで、構造に対する理解は容易である。  
+
+
+| メソッド              | 用途 |
+|:-------------|:--------------|
+| active_relationship.follower           | フォロワーを返す       |
+| active_relationship.followed  | フォローしているユーザーを返す       |
+| user.active_relationship.create(followed_id: other_user.id)  | userと紐付けて能動的関係を作成/登録      |
+| user.actibe_relationship.build(followed_id: other_user.id)   | userを紐付けて能動的関係を作成/登録（失敗時にエラー）      |
+| user_active_relationships.bulid(folloerd_id: other_user.id)   | userと紐付けて新しいRelationshipオブジェクトを返す      |
