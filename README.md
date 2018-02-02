@@ -1263,8 +1263,12 @@ Micropostリソースの追加によって、サンプルアプリケーショ�
 .  
 .  
 まずは、フォローしているユーザーを生成するために、能動的関係に焦点を当てていく。
-フォローしているユーザーは`followed_id`があれば識別することができるので、先ほどの`following`デーブルを`active_relationships`デーブエウト見立てていく。
-
+フォローしているユーザーは`followed_id`があれば識別することができるので、先ほどの`following`デーブルを`active_relationships`デーブエウト見立てていく。  
+ただし、ユーザー情報では無駄なので、ユーザ−id以外の情報は削除する。  
+そして`follow_id`を通して、`users`テーブルのフォローされているユーザーを見つけるようにする  
+.  
+.  
+能動的関係も受動的関係も、最終的にはデータベースの同じテーブルを使うことになる。したがって、テーブル名にはこの「関係」を表す「`relationships`」を使う。モデル名は、Railsの慣習にならって、Relationshipとする。作成したRelatioshipデータモデルを下の表とする。1つのrelationshipsテーブルを使って2つのモデル（能動的関係と受動的関係）をシュミレートする方法については後ほど。
 
 | relationships              | |
 |:-------------|:--------------|
@@ -1273,3 +1277,63 @@ Micropostリソースの追加によって、サンプルアプリケーショ�
 | followed_id  | integer       |
 | created_at   | datetime      |
 | updated_at   | datetime      |
+
+`db/migrate/[timestamp]_create_relationships.rb` (`relationships`テーブルにインデックスを追加する)
+複合キーインデックスという行もあることに注目。これは、`follower_id`と`followed_id`川の実装でも注意を払う。しかし、ユーザーが何らかの方法でrelationshipのデータを操作するようなことが起こり得るそのような場合でも、一意なインデックスを追加していれば、エラーを発生させて重複を防ぐことができる。  
+.  
+.  
+`relationship`デーブルを作成するために、いつものようにデータベースのマイグレーションを行う。
+
+### 14.1.2 User/Relationshipの関連付け
+フォローしているユーザーとフォロワーを実装する前に,
+UserとRelationshipの関連付けを行う。1人のユーザーには、`has_many`(1対多)のリレーションシップがあり、このリレーションシップは2人のユーザーの間の関係なので、フォローしているユーザーとフォロワーの両方に属する。（`belongs_to`）  
+.  
+.  
+次のようなユーザー関連付けのコードを使って新しいリレーションシップを作成する。  
+`user.active_relationships.build(followed_id: ...)`  
+この時点で、アプリケーションコードは１３章ののような感じになるかと思ったら、2つほど大きな間違いがある。  
+.  
+.  
+１つ目は以前、ユーザーとマイクロポストの関連付けをした時は、次のように書いた。  
+```
+class User < ApplicationRecord
+  has_many :microposts
+  .
+  .
+  .
+end
+```
+
+引数の`:micropost`シンボルから、Railsはこれに対応するMicropostモデルを探し出し、見つけることができた。しかし、今回のケースで同じことに書くと、  
+`has_many :active_relationships`  
+となってしまい、(ActiveRelationshipモデルを探してしまい)Relationshipモデルを見つけることができない。このため、今回のケースでは、Railsに探して欲しいモデルのクラス名を明示的に伝える必要がある。  
+.  
+.  
+2爪の違いは、先ほどの逆のケースについてで、以前はMicropostモデルで、  
+```
+class Micropost < ApplicationRecord
+  belongs_to :user
+  .
+  .
+  .
+end
+```  
+このように書いたが、`micropost`テーブルには、`user_id`属性があるので、これをたどって対応するユーザーを特定することができた。データベースの2つのテーブルを繋ぐ時、このようなidは、外部キー(foreign key)と呼ぶ。すなわち、Userモデルに繋げる外部キーが、Micropostモデルの`user_id`属性ということ。この外部キーの名前を使って、Railsは関連付けの推測をしている。具体的には、Railsはデフォルトでは、外部キーの名前を`<class>_id`トイいたパターンとして理解し、`<class>`に当たる部分からクラス名を推測する。ただし、先ほどは、ユーザーを例として扱ったが、今回のケースでは、フォローしているユーザーを`follower_id`という外部キーを使って特定しなくてはならない。また、followerというクラス名は存在しないので、ここでも、Railsに正しいクラス名を伝える必要が発生する。  
+.  
+.  
+先ほどの説明をコードにまとめると、userとRelationshipの関連付けは以下のようになる。  
+`app/models/user.rb` (能動的関係に対して1対多（`has_many`）の関連付けを実装する)  
+```
+class User < ApplicationRecord
+  has_many :microposts, dependent: :destroy
+  has_many :active_relationships, class_name:  "Relationship",
+                                  foreign_key: "follower_id",
+                                  dependent:   :destroy
+  .
+  .
+  .
+end
+```
+(ユーザーを削除したら、ユーザーのリレーションシップも同時に削除される必要がある。そのため、関連付けに`dependent: :destroy`も追加していく。)  
+なお、`follower`の関連付けについては、後ほど...   
+しかし、`follower`と`followed`を対照的に実装しておくことで、構造に対する理解は容易である。  
