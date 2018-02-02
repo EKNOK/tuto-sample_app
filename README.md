@@ -1391,4 +1391,4 @@ user.microposts.count
 具体的には`following?`メソッドであるユーザーをまだフォローしていないことを確認、`follow`メソッドを使ってそのユーザーをフォロー、`following?`メソッドを使ってフォロー中担ったことを確認。最後に`unfollow`メソッドでフォロー解除できたことを確認といったテストを書いていく。
 `test/models/user_test.rb` ("following"関連のメソッドをテストをする)  
 `following`に夜関連付けを使って`follow`、`unfollow`、 `following?`メソッドを実装していく。この時可能な限り`self`を省略している点に注目。  
-`app/models/user.rb`
+`app/models/user.rb` ("following"関連のメソッド)  
