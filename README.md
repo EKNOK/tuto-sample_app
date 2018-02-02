@@ -1346,3 +1346,49 @@ end
 | user.active_relationship.create(followed_id: other_user.id)  | userと紐付けて能動的関係を作成/登録      |
 | user.actibe_relationship.build(followed_id: other_user.id)   | userを紐付けて能動的関係を作成/登録（失敗時にエラー）      |
 | user_active_relationships.bulid(folloerd_id: other_user.id)   | userと紐付けて新しいRelationshipオブジェクトを返す      |
+
+### 14.1.3 Relationshipのバリデーション
+先に進む前に、Relationshipモデルの賢所を追加して完全なものにしておく。テストコードをアプリケーションコードは素直なもの。ただしUser用のfixtureファイルと同じように、生成されたRelationship用のfixtureでは、マイグレーションで誓約させた一意性を満たすことができない。ということで、ユーザーの時と同じで今の時点では生成されたReltionship用のfixtureファイルも空にしておく。  
+`test/models/relationship_test.rb` (relationshipモデルのバリデーションをテストする)  
+`app/models/relationship.rb` (Relationshipモデルに対してバリデーションを追加する)  
+`test/fixtures/relationships.yml`(Relationship用のfixtureを空にする)  
+これでテストはGREENになる。  
+
+
+### 14.1.4 フォローしているユーザー
+いよいよRelationshipの関連付けの核心、`following`と`followers`に取り掛かる。今回は`has_many through` を使う。1人のユーザーにはいくつもの「フォローする」「フォローされる」といった関係性がある。（多対多）デフォルトの`has_many through`という関連付けでは、Railsはモデル名（単数形）に対応する外部キーを探す。つまり、  
+`has_many :followeds, through: :active_relationships`  
+Railsは「followeds」というシンボル名を見てこれを「followed」という単数形に変え、`Relationships`テーブルの`followed_id`を使って対象のユーザーを取得していく。しかし、`user.followeds`という名前は英語で不適切。代わりに`user.following`という名前を使う。そのためには、Railsのデフォルトを上書きする必要がある。ここでは、`:source`パラメータを使って「`following`配列の元は`followed` idの集合である」という明示的にRailsに伝える。  
+`app/models/user.rb` (Userモデルに`following`の関連付けを追加する)  
+これで定義した関連付けにより、フォローしているユーザーを配列の様に扱える様になった。例えば、`include?`メソッドを使ってフォローしているユーザーの集合を調べてみたり、関連付けを通してオブジェクトを探し出せる様になる。  
+```
+user.following.include?(other_user)
+user.following.find(other_user)
+```
+`following`で取得したオブジェクトは、配列の様に要素を追加したり、削除したりすることができる。  
+```
+user.following << other_user
+user.following.delete(other_user)
+```
+(`<<`演算子で配列の最後に追記する)  
+`following`メソッドで配列の様に扱えるだけでも便利だが、Railsは単純な配列だけでなく、もっと賢くこの集合を扱っている。例えば、  
+```
+folloeing.include?(other_user)
+```
+
+フォローしている全てのユーザーをデータベースから取得し、その集合に対して`include?`メソッドを実行している様に見えるが、実際にはデータベースの中で直接比較する様に配慮している。????  
+```
+user.microposts.count
+```
+データベースの中で合計を計算した方が高速になる点に注意。  
+.  
+.  
+次にfollowingで取得した集合をより簡単に取り扱うために、`follow`や`unfollow`といった便利メソッドを追加する。これらのメソッドは、例えば、`user.follow(other_user)`といった具合に使う。
+さらにこれに関連する`following?`論理値メソッドも追加し、あるユーザーが誰かをフォローしているかどうかを確認できる様にする。  
+.   
+.  
+今回はこう行ったメソッドはテストから先に書いていく。というのもWebインターフェイスなどで便利メソッドを使うのはまだ先なので、すぐに使える場面がなく、実装した手応えを得にくいから。一方で、Userモデルに対するテストを書くのは簡単かつ今すぐにできる。そ野テストの中で、これらにメソッドを使っていく。
+具体的には`following?`メソッドであるユーザーをまだフォローしていないことを確認、`follow`メソッドを使ってそのユーザーをフォロー、`following?`メソッドを使ってフォロー中担ったことを確認。最後に`unfollow`メソッドでフォロー解除できたことを確認といったテストを書いていく。
+`test/models/user_test.rb` ("following"関連のメソッドをテストをする)  
+`following`に夜関連付けを使って`follow`、`unfollow`、 `following?`メソッドを実装していく。この時可能な限り`self`を省略している点に注目。  
+`app/models/user.rb`
