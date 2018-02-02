@@ -1392,3 +1392,28 @@ user.microposts.count
 `test/models/user_test.rb` ("following"関連のメソッドをテストをする)  
 `following`に夜関連付けを使って`follow`、`unfollow`、 `following?`メソッドを実装していく。この時可能な限り`self`を省略している点に注目。  
 `app/models/user.rb` ("following"関連のメソッド)  
+これでテストはGREENになる。  
+
+### 14.1.5 フォロワー
+リレーションシップというパズルの最後は、`user.follower`メソッドを追加すること。これは、上の`user.following`メソッドを対になる。フォロワーの配列を展開するために必要な情報は、`relationships`テーブル二既にある。つまり作成した`active_relationships`のテーブルを再利用すること。実際、`follower_id`と`followed_id`を入れ替えるだけで、フォロワーについてもフォローする場合と全く同じ方法で活用できる。  
+`app/models/user.rb`（ 受動的関係を使って`user.followers`を実装する ）  
+一点、ここで注意することは、次の様に参照先(`followers`)を指定するための`:source`キーを省略してもよかったという点。
+```
+has_many :followers, through: :passive_relationships
+```
+
+これは`:followers`属性の場合、Railsが「followes」を単数系にして自動的に外部キー`follower_id`を探してくれるから。ここと違って必要のない`:source`キーをそのまま残しているのは、`has_many :following`との類似性を強調させるため。  
+.  
+.  
+次に`followers.include?`メソッドを使って先ほど野データをモデルをテストしていく。次に書くコードでは、`following?`と対照的な`followed_by?`メソッドを定義しても良いが、サンプルアプリケーションで実際に使う場面がなかったので、このメソッドは省略する。  
+`test/models/user_test.rb` (`followers`に対するテスト)  
+ここでは、実際には多くの処理が正しく動いていなければパスしない。つまり、`user.followers`を実装の影響を受けやすいテストだと言える。  
+これでテストはGREENになる。  
+
+## 14.2 [follow]のWebインターフェイス
+14.1では、やや複雑なデータモデリングの技術を説明したが、理解するのに時間がかかってしまっても理解するところ。  
+.  
+.  
+この章の最初に、フォローしているユーザーのページ表示の流れについて説明した。この節では、モックアップで示した様にフォロー/フォロー解除野基本的なインターフェイスを実装する。また、フォローしているユーザーとフォロワーのステータスフィードを追加して、サンプルアプリケーションを完成させる。  
+
+### フォローのサンプルデータ 
