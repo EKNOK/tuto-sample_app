@@ -1421,8 +1421,62 @@ has_many :followers, through: :passive_relationships
 .  
 .  
 このコードは、リレーションシップのサンプルデータを生成するためのコードで、ここでは、最初野ユーザーにユーザー`3`からユーザー`51`までをフォローさせ、それから、逆にユーザー`4`からユーザー`41`の最初のユーザーをフォローさせる。こうしてリレーションシップを作成しておけば、アプリケーションのインターフェイスを開発することができる。  
-`db/seed.rb` （サンプルデータにfollowing/follower野関係性を追加する ）  
+`db/seed.rb` （サンプルデータにfollowing/followerの関係性を追加する ）  
 ```
 $ rails db:migrate:reset
 $ rails db:seed
 ```
+
+### 14.2.2 統計と[Follow]フォーム
+これでサンプルユーザーに、フォローしているユーザーとフォロワーができた。プロフィールページとHOMEページに、フォローしているユーザーとフォロワーの統計情報を表示するためのパーシャルを作成する。次にフィリー用とフォロー解除用のフォームを作成する。それからフォローしているユーザーの一覧("following")とフォロワーの一覧("followers")を表示する専用のページを作成する。  
+.  
+.  
+Twitterの慣習に従ってフォロー数の単位には「following」を使い、例えば、「50 following」といった具合に表示する。  
+.  
+.  
+統計情報には、現在のユーザーがフォローしている人数が表示されている。それぞれの表示はリンクになっていて、これらのリンクはダミーテキスト`#`で誤魔化す。しかし、ルーティングについての知識も増えてきたので、今回実装する。このコードでは、`resources`ブロックの内側で`:member`メソッドを使う。  
+`config/routes.rb` (Userコントローラに`following`アクションと`followers`アクションを追加する)  
+この場合のURLは /users/1/following や /users/1/followers のように表す。どちらもデータを表示するページなので、適切なHTTPメソッドはGETリクエストになる。従って、`get`メソッドを使うとユーザーidが含まれているURLを扱うようになるが、idを指定せずにメンバーを表示するには、`collection`メソッドを使う。  
+```
+resources :users do
+  collection do
+    get :tigers
+  end
+end
+```
+このコードは /users/tigers というURLに応答する。  
+.  
+.  
+ルーティングを定義したので、統計情報のパーシャルを実装する準備が整った。このパーシャルでは、divタグの中に2つリンクを含めるようにする。  
+`app/views/shared/_stats.html.erb` (フォロワーの統計情報を表示するパーシャル)  
+このパーシャルはプロフィールページとHOMEページ両方に表示されるので、最初の行では現在のログインユーザーを取得する。  
+`<% @user ||= current_user %>`  
+これは`@user`が`nil`でない場合は何もせず`nil`の場合には`@user`に`current_user`を代入するコード。その後、フォローしているユーザーの人数を、次のように関連づけて計算する。  
+`@user.following.count`  
+フォロワーについても同様。  
+`@user.followers.count`  
+上のコードは、マイクロポストの投稿数を表示した方法と同じ。  
+これで統計情報パーシャルが出来上がる。HOMEページにこの統計情報を表示するためには、、  
+ `app/views/static_pages/home.html.erb`（HOMEページにフォロワーの統計情報を追加する）  
+ SCSSと追加する。  
+ `app/assets/stylesheets/custom.scss` (HOMEページのサイドバー用のSCSS)  
+ この後すぐに、プロフィールにも統計情報パーシャルを表示する。今のうちに[Follow]/[Unfollow]ボタン用のパーシャルも作成する。  
+ `app/views/users/_follow_form.html.erb` (フォロー/フォロー解除フォームのパーシャル)  
+ このコードは、`follow`と`unfollow`のパーシャル二作業を振っているだけ。パーシャルでは、Relationshipsリソース用の新しいルーティングが必要。  
+ `config/routes.rb` (Relatipnshipリソース用のルーティングを追加する)  
+ フォロー/フォロー解除用のパーシャル自体は、以下。  
+ `app/views/users/_follow.html.erb` (ユーザーをフォローする)  
+ `app/views/users/_unfollow.html.erb` (ユーザーをフォロー解除する)  
+ これらの2つのフォームでは、いずれも`form_for`を使ってRelationshipモデルオブジェクトを操作している。これらの2つのフォームは`_follow`は新しいリレーションシップを作成するのに対し、`_unfollow`は既存のリレーションシップを見つけ出すという点。  
+ すなわち、前者はPOSTリクエストをRelationshipコントローラに送信してリレーションシップを`create`(作成)し、  
+ 後者は、DELETEリクエストを送信してリレーションシップを`destroy`(削除)するということ。  
+ ただ、どちらともボタンしかない。それでもこのフォームは`followed_id`をコントローラに送信する必要がある。これを行うために、`hidden_field_tag`メソッドを使う。このメソッドは、HTMLで以下を生成する  
+ `<input id="followed_id" name="followed_id" type="hidden" value="3" />`  
+この隠しフィールドの`input`を使うことでブラウザに表示させずに適切な情報を含めることができる。  
+.  
+.  
+パーシャルとしてフォロー用フォームをプロフィールページに表示できるようにする。  
+`app/views/users/show.html.erb` (プロフィールページにフォロー用フォームとフォロワーの統計情報を追加する)  
+これを動作させるためには２通り方法あり、１つは標準的な方法、２つ目はAjaxを使う方法。  
+
+### 14.2.3 [Following]と[Followers]ページ
