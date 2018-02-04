@@ -1423,7 +1423,7 @@ has_many :followers, through: :passive_relationships
 このコードは、リレーションシップのサンプルデータを生成するためのコードで、ここでは、最初野ユーザーにユーザー`3`からユーザー`51`までをフォローさせ、それから、逆にユーザー`4`からユーザー`41`の最初のユーザーをフォローさせる。こうしてリレーションシップを作成しておけば、アプリケーションのインターフェイスを開発することができる。  
 `db/seed.rb` （サンプルデータにfollowing/followerの関係性を追加する ）  
 
-```ruby:sample.rb
+```
 $ rails db:migrate:reset
 $ rails db:seed
 ```
@@ -1507,7 +1507,7 @@ end
 ### 14.2.4 [Follow]ボタン (基本編)
 
 
-```ruby:test.rb
+```ruby:
 puts 'Hello, World'
 ```
 
