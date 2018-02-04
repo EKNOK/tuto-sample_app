@@ -1073,11 +1073,13 @@ Micropostsコントローラからも`logged_in_user`メソッドを呼び出せ
 これの`?`はセキュリティ上重要な役割を果たしている。  
 SQLクエリに代入する前に`id`がエスケープされるため、 **SQLインクジェクション** と呼ばれる深刻なセキュリティホールを避けることができる。  
 この場合の`id`属性は単なる整数 (すなわちself.idはユーザーのid) であるため危険はないが、SQL文に変数を代入する場合は常にエスケープする習慣をぜひ身につける。  
-```
+
+```ruby
 def feed
   microposts
 end
 ```
+
 上のコードでも使えるが、14章で必要となるとなる完全なセテータスフィードで応用が利く。  
 .  
 .  
@@ -1323,7 +1325,8 @@ end
 .  
 先ほどの説明をコードにまとめると、userとRelationshipの関連付けは以下のようになる。  
 `app/models/user.rb` (能動的関係に対して1対多（`has_many`）の関連付けを実装する)  
-```
+
+```ruby:user.rb
 class User < ApplicationRecord
   has_many :microposts, dependent: :destroy
   has_many :active_relationships, class_name:  "Relationship",
@@ -1334,6 +1337,7 @@ class User < ApplicationRecord
   .
 end
 ```
+
 (ユーザーを削除したら、ユーザーのリレーションシップも同時に削除される必要がある。そのため、関連付けに`dependent: :destroy`も追加していく。)  
 なお、`follower`の関連付けについては、後ほど...   
 しかし、`follower`と`followed`を対照的に実装しておくことで、構造に対する理解は容易である。  
@@ -1507,13 +1511,9 @@ end
 ### 14.2.4 [Follow]ボタン (基本編)
 
 
-```ruby:
-puts 'Hello, World'
-```
-
 <details><summary>サンプルコード</summary><div>
 
-```ruby:test.rb
+```ruby
 puts 'Hello, World'
 ```
 
