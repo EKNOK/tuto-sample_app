@@ -9,8 +9,8 @@
 # ユーザー
 User.create!(name: "Example User",
           email: "example@railstutorial.org",
-          password: "foobar",
-          password_confirmation: "foobar",
+          password: "1234",
+          password_confirmation: "1234",
           admin: true,
           activated: true,
           activated_at: Time.zone.now )

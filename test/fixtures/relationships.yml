@@ -1,1 +1,15 @@
-# 14.1.3 で空にする
+one:
+  follower: micheal
+  followed: lana
+
+two:
+  follower: micheal
+  followed: malory
+
+three:
+  follower: lana
+  followed: micheal
+
+four:
+  follower: archer
+  followed: micheal
