@@ -1509,6 +1509,21 @@ end
 
 
 ### 14.2.4 [Follow]ボタン (基本編)
+ビューが整ってきたので、いよいよ[follow]/[unfollow]ボタンを動作させる。フォローとフォロー解除はそれぞれrelationshipの作成と削除に対応しているため、まずはRelationshipコントローラが必要。  
+`$ rails g controller Relationship`  
+Rekationshipsコントローラのアクションでアクセス制御することはそこまで難しくない。しかし、前回のアクセス制御の時と同じように最初にテストを書き、それをパスするように実装することで、セキュリティモデルを確立していく。今回はまずはコントローラのアクションにアクセスする時、ログイン済みのユーザーであるかどうかをチェックする。もしログインしていなければログインページにリダイレクトされるので、Relationshipのカウントが変わっていないことを確認する。  
+`test/controllers/relationships_controller_test.rb` (relationshipの基本手なアクセス制御に対するテスト)  
+.  
+.  
+次に、このテストをパスさせるために`logged_in_user`フィルターをRelationshipコントローラのアクションに対して追加する。  
+`app/controllers/relationships_controller.rb` (リレーションシップのアクセス制御)  
+[Follow]/[Unfollow]ボタンを動作させるためには、フォームから送信されたパラメータを使って、`follow_id`に対応するユーザーに対して適切に`follow/unfollow`メソッドを使う。  
+`app/controlloers/relationships_controller.rb` (Relationshipコントローラ)  
+これでフォロー/フォロー解除の機能が完成した。どのユーザーも他のユーザーをフォローしたりフォロー解除したりできる。ブラウザ上でボタンをクリックして確かめてみる。  
+
+
+### 14.2.5 [Follow]ボタン
+
 
 
 <details><summary>サンプルコード</summary><div>
