@@ -14,6 +14,32 @@ $gray-medium-light: #eaeaea;
 /* universal */
 body {
   padding-top: 60px;
+  font-family:  'Century Gothic';
+}
+.jumbotron {
+  background-image: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+}
+
+.home-signup {
+  display: inline-block;
+  text-decoration: none;
+  color: #668ad8;
+  width: 120px;
+  height: 120px;
+  line-height: 120px;
+  border-radius: 50%;
+  border: solid 2px #668ad8;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+  font-weight: bold;
+  transition: .2s;
+}
+
+.home-signup:hover {
+  background: #668ad8;
+  color: white;
+  text-decoration: none;
 }
 
 section {
