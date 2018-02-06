@@ -1591,7 +1591,45 @@ $("#follow_form").html("foobar")
 
 
 ### 14.2.6 フォローをテストする
+フォローボタンが動く様になったので、バグを検証するためにシンプルなテストを書いていく。ユーザーのフォローに対するテストでは、/relationshipsに対してPOSTリクエストを送り、フォローされたユーザーが1人増えたことをチェックする。具体的なコードは以下。  
 
+```rb
+assert_difference '@user.following.count', 1 do
+  post relationships_path, params: { followed_id: @other.id }
+end
+```
+
+これは標準なフォローに対するテストではあるが、Ajax版のやり方もだいたい一緒。Ajax版のテストでは、`xhr :true`オブジェクトを使う様にするだけ。  
+
+```rb
+assert_difference '@user.following.count', 1 do
+  post relationships_path, params: { followed_id: @other.id }, xhr: true
+end
+```
+
+ここで使っている`xhr`(XmlHttpRequest)というオブジェクトというオプションを`true`に設定すると、Ajax出ろクエストを発行する様に変わる。したがって`respond_to`では、JSに対応した行が実行される様になる。  
+.  
+.  
+また、ユーザーをフォロー解除する時も構造はほとんど一緒で、`post`メソッドを`delete`メソッドに置き換えてテストする。つまり、そのユーザーのidとリレーションシップのidを使ってDELETEリクエストを送信し、フォローしている数は1つ減ることを確認する。したがって、  
+
+```rb
+assert_difference '@user.following.count', -1 do
+  delete relationship_path(relationship), xhr: true
+end
+```
+
+これらのテストをまとめる。  
+`test/integration/following_test.rb` ([Follow]/[Unfollow]ボタンをテストする。)  
+これでテストはGREENになる。  
+
+
+## 14.3 ステータスフィード
+つにサンプルアプリケーションの差長が目の前に現れた。最後の難関、ステータスフィードの実装に取り掛かる。この節で扱われている内容は本書の中でも、もっとも高度のもの。現在のユーザーにフォローされているユーザーのマイクロポストの配列を作成し、現在のユーザー自身のマイクロポストと合わせて表示する。このセクションを通して、複雑さを増したフィードの実装に進んでいく。これを実現するためには、RailsとRubyの高度な機能の他に、SQLプログラミングの技術も必要。  
+.  
+.  
+手強い課題に挑むので、ここで実装すべき内容を慎重に見直すことが必要。  
+
+### 14.3.1 同期と計画
 
 
 <details><summary>サンプルコード</summary><div>
