@@ -1,9 +1,7 @@
 require 'test_helper'
 
 class UserTest < ActiveSupport::TestCase
-  # test "the truth" do
-  #   assert true
-  # end
+
   def setup
     @user = User.new(name:"ExampleUser", email:"user@user.com",
               password: "1234", password_digest: "1234")
@@ -78,5 +76,22 @@ class UserTest < ActiveSupport::TestCase
   end
 
 
+  test "feed should have the right posts" do
+    micheal = users(:micheal)
+    archer  = users(:archer)
+    lana    = users(:lana)
+    # フォローしているユーザーの投稿を確認
+    lana.microposts.each do |post_following|
+      assert micheal.feed.include?(post_following)
+    end
+    # 自分自身の投稿を確認
+    micheal.microposts.each do |post_self|
+      assert micheal.feed.include?(post_self)
+    end
+    # フォローしていないユーザーの投稿を確認
+    archer.microposts.each do |post_unfollowed|
+      assert_not micheal.feed.include?(post_unfollowed)
+    end
+  end
 
 end
